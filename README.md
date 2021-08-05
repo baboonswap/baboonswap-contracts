@@ -1,11 +1,11 @@
-# DragonStash Finance
+# BaboonSwap Finance
 
  Feel free to read the code. More details coming soon.
 
 ## Deployed Contracts / Hash
 
-### BSCMAINNET
+### POLYGON
 
-- DragonEggToken - 
+- BaboonToken - 
 - MasterChef - 
 - Timelock - 
