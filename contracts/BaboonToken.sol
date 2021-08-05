@@ -2,8 +2,8 @@ pragma solidity 0.6.12;
 
 import "./libs/BEP20.sol";
 
-// DragonEggToken with Governance.
-contract DragonEggToken is BEP20('DragonEggToken', 'DEG') {
+// BaboonToken with Governance.
+contract BaboonToken is BEP20('BaboonToken', 'BABO') {
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
@@ -112,9 +112,9 @@ contract DragonEggToken is BEP20('DragonEggToken', 'DEG') {
         );
 
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "DEG::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "DEG::delegateBySig: invalid nonce");
-        require(now <= expiry, "DEG::delegateBySig: signature expired");
+        require(signatory != address(0), "BABO::delegateBySig: invalid signature");
+        require(nonce == nonces[signatory]++, "BABO::delegateBySig: invalid nonce");
+        require(now <= expiry, "BABO::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -144,7 +144,7 @@ contract DragonEggToken is BEP20('DragonEggToken', 'DEG') {
         view
         returns (uint256)
     {
-        require(blockNumber < block.number, "DEG::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "BABO::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -181,7 +181,7 @@ contract DragonEggToken is BEP20('DragonEggToken', 'DEG') {
         internal
     {
         address currentDelegate = _delegates[delegator];
-        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying DEGs (not scaled);
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying BABOs (not scaled);
         _delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -217,7 +217,7 @@ contract DragonEggToken is BEP20('DragonEggToken', 'DEG') {
     )
         internal
     {
-        uint32 blockNumber = safe32(block.number, "DEG::_writeCheckpoint: block number exceeds 32 bits");
+        uint32 blockNumber = safe32(block.number, "BABO::_writeCheckpoint: block number exceeds 32 bits");
 
         if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
             checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
