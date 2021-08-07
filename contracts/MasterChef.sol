@@ -7,12 +7,12 @@ import "./libs/IBEP20.sol";
 import "./libs/SafeBEP20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./DragonEggToken.sol";
+import "./BaboonToken.sol";
 
-// MasterChef is the master of DragonEgg. He can make DragonEgg and he is a fair guy.
+// MasterChef is the master of BaboonToken. He can make BaboonToken and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once DEG is sufficiently
+// will be transferred to a governance smart contract once BABO is sufficiently
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
@@ -31,7 +31,7 @@ contract MasterChef is Ownable {
         //   pending reward = (user.amount * pool.accPinPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accDragonEggPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accBaboonTokenPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -40,19 +40,19 @@ contract MasterChef is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IBEP20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. DEGs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that DEGs distribution occurs.
-        uint256 accDragonEggPerShare;   // Accumulated DEGs per share, times 1e12. See below.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. BABOs to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that BABOs distribution occurs.
+        uint256 accBaboonTokenPerShare;   // Accumulated BABOs per share, times 1e12. See below.
         uint16 depositFeeBP;      // Deposit fee in basis points
     }
 
-    // The DEG TOKEN!
-    DragonEggToken public deg;
+    // The BABO TOKEN!
+    BaboonToken public babo;
     // Dev address.
     address public devaddr;
-    // DEG tokens created per block.
-    uint256 public degPerBlock;
-    // Bonus muliplier for early deg makers.
+    // BABO tokens created per block.
+    uint256 public baboPerBlock;
+    // Bonus muliplier for early BABO makers.
     uint256 public constant BONUS_MULTIPLIER = 1;
     // Deposit Fee address
     address public feeAddress;
@@ -63,24 +63,28 @@ contract MasterChef is Ownable {
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when DEG mining starts.
+    // The block number when BABO mining starts.
     uint256 public startBlock;
+    // Developer fee
+    uint256 public devFee;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
-        DragonEggToken _deg,
+        BaboonToken _babo,
         address _devaddr,
         address _feeAddress,
-        uint256 _degPerBlock,
+        uint256 _devFee,
+        uint256 _baboPerBlock,
         uint256 _startBlock
     ) public {
-        deg = _deg;
+        babo = _babo;
         devaddr = _devaddr;
         feeAddress = _feeAddress;
-        degPerBlock = _degPerBlock;
+        devFee= _devFee;
+        baboPerBlock = _baboPerBlock;
         startBlock = _startBlock;
     }
 
@@ -101,12 +105,12 @@ contract MasterChef is Ownable {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accDragonEggPerShare: 0,
+            accBaboonTokenPerShare: 0,
             depositFeeBP: _depositFeeBP
         }));
     }
 
-    // Update the given pool's DEG allocation point and deposit fee. Can only be called by the owner.
+    // Update the given pool's BABO allocation point and deposit fee. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, uint16 _depositFeeBP, bool _withUpdate) public onlyOwner {
         require(_depositFeeBP <= 10000, "set: invalid deposit fee basis points");
         if (_withUpdate) {
@@ -122,18 +126,18 @@ contract MasterChef is Ownable {
         return _to.sub(_from).mul(BONUS_MULTIPLIER);
     }
 
-    // View function to see pending DEGSs on frontend.
-    function pendingDEG(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending BABOs on frontend.
+    function pendingBABO(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accDragonEggPerShare = pool.accDragonEggPerShare;
+        uint256 accBaboonTokenPerShare = pool.accBaboonTokenPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 degReward = multiplier.mul(degPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accDragonEggPerShare = accDragonEggPerShare.add(degReward.mul(1e12).div(lpSupply));
+            uint256 baboReward = multiplier.mul(baboPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accBaboonTokenPerShare = accBaboonTokenPerShare.add(baboReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accDragonEggPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accBaboonTokenPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -156,10 +160,10 @@ contract MasterChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 degReward = multiplier.mul(degPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        deg.mint(devaddr, degReward.div(10));
-        deg.mint(address(this), degReward);
-        pool.accDragonEggPerShare = pool.accDragonEggPerShare.add(degReward.mul(1e12).div(lpSupply));
+        uint256 baboReward = multiplier.mul(baboPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        babo.mint(devaddr, baboReward.div(devFee));
+        babo.mint(address(this), baboReward);
+        pool.accBaboonTokenPerShare = pool.accBaboonTokenPerShare.add(baboReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -169,9 +173,9 @@ contract MasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accDragonEggPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accBaboonTokenPerShare).div(1e12).sub(user.rewardDebt);
             if(pending > 0) {
-                safeDegTransfer(msg.sender, pending);
+                safeBaboTransfer(msg.sender, pending);
             }
         }
         if(_amount > 0) {
@@ -184,7 +188,7 @@ contract MasterChef is Ownable {
                 user.amount = user.amount.add(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accDragonEggPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accBaboonTokenPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -194,15 +198,15 @@ contract MasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accDragonEggPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accBaboonTokenPerShare).div(1e12).sub(user.rewardDebt);
         if(pending > 0) {
-            safeDegTransfer(msg.sender, pending);
+            safeBaboTransfer(msg.sender, pending);
         }
         if(_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accDragonEggPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accBaboonTokenPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -217,13 +221,13 @@ contract MasterChef is Ownable {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe deg transfer function, just in case if rounding error causes pool to not have enough PINs.
-    function safeDegTransfer(address _to, uint256 _amount) internal {
-        uint256 degBal = deg.balanceOf(address(this));
-        if (_amount > degBal) {
-            deg.transfer(_to, degBal);
+    // Safe BABO transfer function, just in case if rounding error causes pool to not have enough PINs.
+    function safeBaboTransfer(address _to, uint256 _amount) internal {
+        uint256 baboBal = babo.balanceOf(address(this));
+        if (_amount > baboBal) {
+            babo.transfer(_to, baboBal);
         } else {
-            deg.transfer(_to, _amount);
+            babo.transfer(_to, _amount);
         }
     }
 
@@ -239,8 +243,8 @@ contract MasterChef is Ownable {
     }
 
     //Pancake has to add hidden dummy pools inorder to alter the emission, here we make it simple and transparent to all.
-    function updateEmissionRate(uint256 _degPerBlock) public onlyOwner {
+    function updateEmissionRate(uint256 _baboPerBlock) public onlyOwner {
         massUpdatePools();
-        degPerBlock = _degPerBlock;
+        baboPerBlock = _baboPerBlock;
     }
 }
